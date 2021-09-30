@@ -36,6 +36,6 @@ npm and express packages utilized
 ## Screenshot
 
 
-![)
+![https://github.com/jhwang2525/note-taker/blob/main/public/note-t.JPG?raw=true]
 
 

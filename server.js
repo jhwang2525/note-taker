@@ -1,104 +1,98 @@
-const express = require("express");
-const path = require("path");
-const fs = require("fs");
+const express = require('express');
+const path = require('path');
+const fs = require('fs/promises');
+const { randomUUID } = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-
-let notesData = [];
+const DB_PATH = path.join(__dirname, 'db', 'db.json');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "Develop/public")));
+app.use(express.static(path.join(__dirname, 'public')));
 
-
-app.get("/api/notes", function(err, res) {
+// ---------- Helpers ----------
+async function readNotes() {
   try {
-
-    notesData = fs.readFileSync("Develop/db/db.json", "utf8");
-    console.log("hello!");
-
-    notesData = JSON.parse(notesData);
-
+    const data = await fs.readFile(DB_PATH, 'utf8');
+    return JSON.parse(data || '[]');
   } catch (err) {
-    console.log("\n error (in app.get.catch):");
-    console.log(err);
-  }
-  res.json(notesData);
-});
-
-
-app.post("/api/notes", function(req, res) {
-  try {
-
-    notesData = fs.readFileSync("./Develop/db/db.json", "utf8");
-    console.log(notesData);
-
-  
-    notesData = JSON.parse(notesData);
-
-    req.body.id = notesData.length;
- 
-    notesData.push(req.body);
- 
-    notesData = JSON.stringify(notesData);
-
-    fs.writeFile("./Develop/db/db.json", notesData, "utf8", function(err) {
-      if (err) throw err;
-    });
-    res.json(JSON.parse(notesData));
-
-
-  } catch (err) {
+    if (err.code === 'ENOENT') return [];
     throw err;
-    console.error(err);
   }
-});
+}
 
-// Delete a note
+const writeNotes = (notes) => fs.writeFile(DB_PATH, JSON.stringify(notes, null, 2));
 
-app.delete("/api/notes/:id", function(req, res) {
+// ---------- API ----------
+app.get('/api/notes', async (req, res, next) => {
   try {
-  
-    notesData = fs.readFileSync("./Develop/db/db.json", "utf8");
-    
-    notesData = JSON.parse(notesData);
-   
-    notesData = notesData.filter(function(note) {
-      return note.id != req.params.id;
-    });
-   
-    notesData = JSON.stringify(notesData);
-   
-    fs.writeFile("./Develop/db/db.json", notesData, "utf8", function(err) {
-      if (err) throw err;
-    });
-
-
-    res.send(JSON.parse(notesData));
-
-
+    res.json(await readNotes());
   } catch (err) {
-    throw err;
-    console.log(err);
+    next(err);
   }
 });
 
+app.post('/api/notes', async (req, res, next) => {
+  try {
+    const title = String(req.body.title || '').trim();
+    const text = String(req.body.text || '').trim();
+    if (!title || !text) {
+      return res.status(400).json({ message: 'A note needs a title and text.' });
+    }
 
-app.get("/notes", function(req, res) {
-  res.sendFile(path.join(__dirname, "public/notes.html"));
+    const notes = await readNotes();
+    const note = { id: randomUUID(), title, text, updatedAt: new Date().toISOString() };
+    notes.push(note);
+    await writeNotes(notes);
+    res.status(201).json(note);
+  } catch (err) {
+    next(err);
+  }
 });
 
+app.put('/api/notes/:id', async (req, res, next) => {
+  try {
+    const notes = await readNotes();
+    const note = notes.find((n) => n.id === req.params.id);
+    if (!note) return res.status(404).json({ message: 'Note not found.' });
 
-app.get("*", function(req, res) {
-  res.sendFile(path.join(__dirname, "public/index.html"));
+    const title = String(req.body.title ?? note.title).trim();
+    const text = String(req.body.text ?? note.text).trim();
+    if (!title || !text) {
+      return res.status(400).json({ message: 'A note needs a title and text.' });
+    }
+
+    Object.assign(note, { title, text, updatedAt: new Date().toISOString() });
+    await writeNotes(notes);
+    res.json(note);
+  } catch (err) {
+    next(err);
+  }
 });
 
-app.get("/api/notes", function(req, res) {
-  return res.sendFile(path.json(__dirname, "db/db.json"));
+app.delete('/api/notes/:id', async (req, res, next) => {
+  try {
+    const notes = await readNotes();
+    const remaining = notes.filter((n) => n.id !== req.params.id);
+    if (remaining.length === notes.length) {
+      return res.status(404).json({ message: 'Note not found.' });
+    }
+    await writeNotes(remaining);
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
 });
 
+// ---------- Pages ----------
+app.get('/notes', (req, res) => res.sendFile(path.join(__dirname, 'public', 'notes.html')));
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
-app.listen(PORT, function() {
-  console.log("SERVER IS LISTENING: " + PORT);
+// ---------- Errors ----------
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ message: 'Something went wrong.' });
 });
+
+app.listen(PORT, () => console.log(`Note Taker running at http://localhost:${PORT}`));

@@ -1,42 +1,36 @@
 # Note Taker
 
-## Description
-This is a back-end node index.js file that is designed to generate Professional a Read-Me.md file.
-After a successful follow through of a small amount of steps, questions and processes are responded to. 
+Write, edit and organize notes in a clean two-pane editor. Notes are stored by a small Express REST API backed by a JSON file.
 
-- AS A small business owner
-- I WANT to be able to write and save notes
-- SO THAT I can organize my thoughts and keep track of tasks I need to complete
+![Note Taker screenshot](assets/screenshot.png)
 
+## Features
 
-* GIVEN a note-taking application
-1. WHEN I open the Note Taker
-* THEN I am presented with a landing page with a link to a notes page
-2. WHEN I click on the link to the notes page
-* THEN I am presented with a page with existing notes listed in the left-hand column, plus empty fields to enter a new note title and the note’s text in the right-hand column
-3. WHEN I enter a new note title and the note’s text
-* THEN a Save icon appears in the navigation at the top of the page
-4. WHEN I click on the Save icon
-* THEN the new note I have entered is saved and appears in the left-hand column with the other existing notes
-5. WHEN I click on an existing note in the list in the left-hand column
-* THEN that note appears in the right-hand column
-6. WHEN I click on the Write icon in the navigation at the top of the page
-* THEN I am presented with empty fields to enter a new note title and the note’s text in the right-hand column
+- Create, edit and delete notes
+- Instant search across titles and note text
+- Notes sorted by last edit, with dates
+- Save button only enables when there are unsaved changes; Ctrl/⌘ + S to save
+- Input validation and error handling on the API
+- Responsive layout
 
+## API
 
+| Method | Route            | Description        |
+| ------ | ---------------- | ------------------ |
+| GET    | `/api/notes`     | List all notes     |
+| POST   | `/api/notes`     | Create a note      |
+| PUT    | `/api/notes/:id` | Update a note      |
+| DELETE | `/api/notes/:id` | Delete a note      |
 
-## Installation
-Download files through Github
+## Built with
 
-npm and express packages utilized
+Node.js, Express, vanilla JavaScript, HTML and CSS.
 
+## Run locally
 
+```bash
+npm install
+npm start
+```
 
-
-## Screenshot
-
-
-![](https://github.com/jhwang2525/note-taker/blob/main/public/note-t.JPG?raw=true)
-
-## Deployed URL
-https://notetakear.herokuapp.com/
+Then open http://localhost:3001.
